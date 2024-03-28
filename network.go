@@ -1,8 +1,9 @@
 package iwd
 
 import (
-	dbus "github.com/godbus/dbus/v5"
 	"strconv"
+
+	dbus "github.com/godbus/dbus/v5"
 )
 
 const (

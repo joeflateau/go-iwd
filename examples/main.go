@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/godbus/dbus/v5"
-	"github.com/shibumi/iwd"
+	"github.com/joeflateau/go-iwd"
 )
 
 // This little example shows the network name of the connected wifi network.
@@ -14,12 +15,15 @@ func main() {
 	}
 	defer conn.Close()
 
-	iwdClient := iwd.New(conn)
+	iwdClient, err := iwd.New(conn)
+	if err != nil {
+		panic(err)
+	}
 	// lookup connected network
 	var networkPath dbus.ObjectPath
 	for _, station := range iwdClient.Stations {
 		if station.State == "connected" {
-			networkPath = station.ConnectedNetwork
+			networkPath = *station.ConnectedNetwork
 			break
 		}
 	}

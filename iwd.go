@@ -25,55 +25,71 @@ type Iwd struct {
 }
 
 // New parses the net.connman.iwd object index and initializes an iwd object
-func New(conn *dbus.Conn) Iwd {
+func New(conn *dbus.Conn) (*Iwd, error) {
 	var objects map[dbus.ObjectPath]map[string]map[string]dbus.Variant
 	objectManager := conn.Object(objectIwd, "/")
-	objectManager.Call("org.freedesktop.DBus.ObjectManager.GetManagedObjects", 0).Store(&objects)
-	i := Iwd{
-		make([]Agent, 0),
-		make([]Adapter, 0),
-		make([]KnownNetwork, 0),
-		make([]Network, 0),
-		make([]Station, 0),
-		make([]Device, 0),
+	err := objectManager.Call("org.freedesktop.DBus.ObjectManager.GetManagedObjects", 0).Store(&objects)
+
+	if err != nil {
+		return nil, err
 	}
+
+	iwd := Iwd{
+		Agents:        make([]Agent, 0),
+		Adapters:      make([]Adapter, 0),
+		KnownNetworks: make([]KnownNetwork, 0),
+		Networks:      make([]Network, 0),
+		Stations:      make([]Station, 0),
+		Devices:       make([]Device, 0),
+	}
+
 	for k, v := range objects {
 		for resource, obj := range v {
 			switch resource {
 			case objectAdapter:
-				i.Adapters = append(i.Adapters, Adapter{
-					Path:  k,
-					Model: obj["Model"].Value().(string), Name: obj["Name"].Value().(string),
-					Powered: obj["Powered"].Value().(bool), SupportedModes: obj["SupportedModes"].Value().([]string),
-					Vendor: obj["Vendor"].Value().(string),
+				iwd.Adapters = append(iwd.Adapters, Adapter{
+					Path:           k,
+					Model:          castOrDefault(obj["Model"], ""),
+					Name:           castOrDefault(obj["Name"], ""),
+					Powered:        obj["Powered"].Value().(bool),
+					SupportedModes: obj["SupportedModes"].Value().([]string),
+					Vendor:         castOrDefault(obj["Vendor"], ""),
 				})
 			case objectKnownNetwork:
-				i.KnownNetworks = append(i.KnownNetworks, KnownNetwork{
-					Path:        k,
-					AutoConnect: obj["AutoConnect"].Value().(bool), Hidden: obj["Hidden"].Value().(bool),
-					LastConnectedTime: obj["LastConnectedTime"].Value().(string), Name: obj["Name"].Value().(string),
-					Type: obj["Type"].Value().(string),
+				iwd.KnownNetworks = append(iwd.KnownNetworks, KnownNetwork{
+					Path:              k,
+					AutoConnect:       obj["AutoConnect"].Value().(bool),
+					Hidden:            obj["Hidden"].Value().(bool),
+					LastConnectedTime: obj["LastConnectedTime"].Value().(string),
+					Name:              castOrDefault(obj["Name"], ""),
+					Type:              obj["Type"].Value().(string),
 				})
 			case objectNetwork:
-				i.Networks = append(i.Networks, Network{
+				iwd.Networks = append(iwd.Networks, Network{
 					Path:      k,
-					Connected: obj["Connected"].Value().(bool), Device: obj["Device"].Value().(dbus.ObjectPath),
-					Name: obj["Name"].Value().(string), Type: obj["Type"].Value().(string),
+					Connected: obj["Connected"].Value().(bool),
+					Device:    obj["Device"].Value().(dbus.ObjectPath),
+					Name:      castOrDefault(obj["Name"], ""),
+					Type:      obj["Type"].Value().(string),
 				})
 			case objectStation:
-				i.Stations = append(i.Stations, Station{
+				iwd.Stations = append(iwd.Stations, Station{
 					Path:             k,
-					ConnectedNetwork: obj["ConnectedNetwork"].Value().(dbus.ObjectPath), Scanning: obj["Scanning"].Value().(bool),
-					State: obj["State"].Value().(string),
+					ConnectedNetwork: castOrDefault[*dbus.ObjectPath](obj["ConnectedNetwork"], nil),
+					Scanning:         obj["Scanning"].Value().(bool),
+					State:            obj["State"].Value().(string),
 				})
 			case objectDevice:
-				i.Devices = append(i.Devices, Device{
+				iwd.Devices = append(iwd.Devices, Device{
 					Path:    k,
-					Adapter: obj["Adapter"].Value().(dbus.ObjectPath), Address: obj["Address"].Value().(string),
-					Mode: obj["Mode"].Value().(string), Name: obj["Name"].Value().(string), Powered: obj["Powered"].Value().(bool),
+					Adapter: obj["Adapter"].Value().(dbus.ObjectPath),
+					Address: obj["Address"].Value().(string),
+					Mode:    obj["Mode"].Value().(string),
+					Name:    castOrDefault(obj["Name"], ""),
+					Powered: obj["Powered"].Value().(bool),
 				})
 			}
 		}
 	}
-	return i
+	return &iwd, nil
 }

@@ -1,4 +1,4 @@
-module github.com/shibumi/iwd
+module github.com/joeflateau/go-iwd
 
 go 1.18
 
