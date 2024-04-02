@@ -74,6 +74,7 @@ func New(conn *dbus.Conn) (*Iwd, error) {
 				})
 			case objectStation:
 				iwd.Stations = append(iwd.Stations, Station{
+					iwd:              &iwd,
 					Path:             k,
 					ConnectedNetwork: castOrDefault[*dbus.ObjectPath](obj["ConnectedNetwork"], nil),
 					Scanning:         obj["Scanning"].Value().(bool),
