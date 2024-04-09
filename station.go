@@ -8,6 +8,7 @@ const (
 	objectStation                 = "net.connman.iwd.Station"
 	callStationScan               = "net.connman.iwd.Station.Scan"
 	callStationGetOrderedNetworks = "net.connman.iwd.Station.GetOrderedNetworks"
+	callStationDisconnect         = "net.connman.iwd.Station.Disconnect"
 )
 
 // Station refers to net.connman.iwd.Station
@@ -58,4 +59,13 @@ func (s *Station) GetOrderedNetworks(conn *dbus.Conn) ([]*OrderedNetwork, error)
 		}
 	}
 	return orderedNetworks, nil
+}
+
+func (s *Station) Disconnect(conn *dbus.Conn) error {
+	obj := conn.Object(objectIwd, s.Path)
+	call := obj.Call(callStationDisconnect, 0)
+	if call.Err != nil {
+		return call.Err
+	}
+	return nil
 }
